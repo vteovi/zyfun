@@ -1,6 +1,7 @@
 import type { Buffer } from 'node:buffer';
 
 import { loggerService } from '@logger';
+import { imageCache } from '@main/services/ImageCache';
 import { clearDir, ensureDir, readFile, saveFile } from '@main/utils/file';
 import { APP_REQUIRE_PATH, APP_TEMP_PATH } from '@main/utils/path';
 import { LOG_MODULE } from '@shared/config/logger';
@@ -75,6 +76,7 @@ class FileStorage {
   public clearTempCache = async (): Promise<void> => {
     await this.clearCache();
     await this.clearTemp();
+    await imageCache.clear();
   };
 
   public selectFileDialog = async (options?: OpenDialogOptions): Promise<string[]> => {

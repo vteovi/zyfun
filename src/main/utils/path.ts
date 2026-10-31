@@ -35,7 +35,7 @@ export const HOME_PATHS = ['bin'] as const;
 
 export type IHomePath = (typeof HOME_PATHS)[number];
 
-export const USER_PATHS = ['database', 'file', 'log', 'plugin', 'temp'] as const;
+export const USER_PATHS = ['database', 'file', 'log', 'plugin', 'temp', 'cache'] as const;
 
 export type IUserPath = (typeof USER_PATHS)[number];
 
@@ -92,6 +92,7 @@ export const APP_FILE_PATH: string = getUserPath('file');
 export const APP_LOG_PATH: string = getUserPath('log');
 export const APP_PLUGIN_PATH: string = getUserPath('plugin');
 export const APP_TEMP_PATH: string = getUserPath('temp');
+export const APP_CACHE_PATH: string = getUserPath('cache');
 
 export const HOME_BIN_PATH: string = getHomePath('bin');
 
@@ -102,6 +103,7 @@ export const APP_REQUIRE_PATH: string[] = [
   APP_PLUGIN_PATH,
   APP_FILE_PATH,
   APP_TEMP_PATH,
+  APP_CACHE_PATH,
 ];
 
 /**
@@ -185,6 +187,7 @@ export default {
   APP_RUNTIME_PATH,
   APP_STORE_PATH,
   APP_TEMP_PATH,
+  APP_CACHE_PATH,
   getSystemPath,
   getUserPath,
   isAppMarkPath,

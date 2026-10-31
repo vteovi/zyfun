@@ -51,6 +51,13 @@ export default {
       },
       filter: 'Filter',
     },
+    poster: {
+      title: 'Poster',
+      landscape: 'Landscape Poster',
+      popup: {
+        landscape: 'Show film posters in landscape (16:10) ratio, disable to use portrait ratio',
+      },
+    },
     live: {
       ipMark: 'IP Mark',
       delay: 'Delay',

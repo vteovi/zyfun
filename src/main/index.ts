@@ -15,6 +15,7 @@ import {
   terminate as filmCmsTerminate,
 } from '@main/services/FastifyService/routes/v1/film/cms/utils/cache';
 import { fileStorage } from '@main/services/FileStorage';
+import { imageCache } from '@main/services/ImageCache';
 import { menuService } from '@main/services/MenuService';
 import { pluginService } from '@main/services/PluginService';
 import { handleProtocolUrl, setupAppImageDeepLink } from '@main/services/ProtocolClient';
@@ -34,6 +35,9 @@ import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import fixPath from 'fix-path';
 
 const logger = loggerService.withContext(LOG_MODULE.MAIN);
+
+// `registerSchemesAsPrivileged` only works before the app is ready
+imageCache.registerScheme();
 
 // enable local crash reports
 crashReporter.start({
@@ -157,6 +161,9 @@ const setupReady = () => {
         secureDnsServers: [hostResolver],
       });
     }
+
+    // poster image cache, must be ready before any renderer loads an image
+    await imageCache.init();
 
     const mainWindow = windowService.createMainWindow();
 

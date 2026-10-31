@@ -18,7 +18,7 @@
           <div class="left">
             <t-image
               class="card-main-item"
-              :src="infoConf.vod_pic"
+              :src="cacheImageUrl(infoConf.vod_pic)"
               fit="cover"
               shape="round"
               :style="{ width: '120px', height: '100%' }"
@@ -141,6 +141,7 @@ import { useHistory } from '@/hooks/useHistory';
 import { useStar } from '@/hooks/useStar';
 import { t } from '@/locales';
 import { usePlayerStore } from '@/store';
+import { cacheImageUrl } from '@/utils/image';
 
 const props = defineProps({
   visible: {

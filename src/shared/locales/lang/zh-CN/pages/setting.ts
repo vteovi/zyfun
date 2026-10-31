@@ -50,6 +50,13 @@ export default {
       },
       filter: '过滤',
     },
+    poster: {
+      title: '海报',
+      landscape: '横版海报',
+      popup: {
+        landscape: '影视卡片按横版(16:10)比例展示海报, 关闭则使用竖版比例',
+      },
+    },
     live: {
       ipMark: '网络标识',
       delay: '延迟',

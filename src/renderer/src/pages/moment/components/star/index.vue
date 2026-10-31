@@ -30,7 +30,7 @@
                 </div>
                 <t-image
                   class="card-main-item"
-                  :src="item.videoImage"
+                  :src="cacheImageUrl(item.videoImage)"
                   :lazy="true"
                   fit="cover"
                   shape="round"
@@ -108,6 +108,7 @@ import { t } from '@/locales';
 import DialogDetailView from '@/pages/film/components/DialogDetail.vue';
 import { usePlayerStore } from '@/store';
 import emitter from '@/utils/emitter';
+import { cacheImageUrl } from '@/utils/image';
 
 type IStarBase = IModels['star'];
 type IStarFilm = IStarBase & {

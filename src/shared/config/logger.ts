@@ -52,6 +52,7 @@ export enum LOG_MODULE {
   FASTIFY = 'Fastify',
   FFMPEG = 'FFmpeg',
   FILE_STORAGE = 'FileStorage',
+  IMAGE_CACHE = 'ImageCache',
   PLUGIN = 'Plugin',
   PYTHON = 'Python',
   SEARCH = 'Search',

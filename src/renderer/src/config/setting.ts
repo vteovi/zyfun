@@ -10,6 +10,7 @@ export interface IStoreSetting {
   debug: boolean;
   bossKey: string;
   zoom: number;
+  posterLandscape: boolean;
   nav: {
     setting: string;
     lab: string;
@@ -25,6 +26,7 @@ export const init: IStoreSetting = {
   debug: false,
   bossKey: '',
   zoom: 1,
+  posterLandscape: false,
   nav: {
     setting: 'baseConfig',
     lab: 'crypto',

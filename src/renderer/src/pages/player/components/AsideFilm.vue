@@ -158,7 +158,7 @@
                       <t-image
                         class="logo-lazy"
                         fit="cover"
-                        :src="item.vod_pic"
+                        :src="cacheImageUrl(item.vod_pic)"
                         :lazy="true"
                         :loading="renderDefaultLazy"
                         :error="renderDefaultLazy"
@@ -185,7 +185,7 @@
         <div class="new-intro-base">
           <t-image
             class="new-intro-img"
-            :src="infoConf.vod_pic"
+            :src="cacheImageUrl(infoConf.vod_pic)"
             fit="cover"
             shape="round"
             :lazy="true"
@@ -277,6 +277,7 @@ import { useStar } from '@/hooks/useStar';
 import { t } from '@/locales';
 import type { IVideoOptions, IVideoProcess } from '@/types/player';
 import emitter from '@/utils/emitter';
+import { cacheImageUrl } from '@/utils/image';
 
 import DialogDownloadView from './DialogDownload.vue';
 import DialogSettingView from './DialogSetting.vue';

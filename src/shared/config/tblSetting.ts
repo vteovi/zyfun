@@ -21,6 +21,7 @@ export const settingList = [
       filterMode: false,
     },
   },
+  { key: 'posterLandscape', value: false },
   {
     key: 'live',
     value: {
@@ -94,6 +95,7 @@ export interface ISetting {
     searchMode: string;
     filterMode: boolean;
   };
+  posterLandscape: boolean;
   live: {
     ipMark: boolean;
     thumbnail: boolean;
@@ -146,7 +148,16 @@ export interface ISetting {
   debug: boolean;
 }
 
-export type ISetupKey = 'disclaimer' | 'theme' | 'lang' | 'bossKey' | 'player' | 'barrage' | 'timeout' | 'debug';
+export type ISetupKey =
+  | 'disclaimer'
+  | 'theme'
+  | 'lang'
+  | 'bossKey'
+  | 'player'
+  | 'barrage'
+  | 'timeout'
+  | 'debug'
+  | 'posterLandscape';
 
 export const setupKeys: ISetupKey[] = [
   'disclaimer',
@@ -157,6 +168,7 @@ export const setupKeys: ISetupKey[] = [
   'barrage',
   'timeout',
   'debug',
+  'posterLandscape',
 ];
 
 export type ISetup = Pick<ISetting, ISetupKey>;

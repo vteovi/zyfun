@@ -89,6 +89,19 @@
           </t-select>
         </t-space>
       </t-form-item>
+      <t-form-item :label="$t('pages.setting.base.poster.title')" name="poster">
+        <t-space align="center">
+          <t-switch v-model="formData.posterLandscape" />
+          <span>{{ $t('pages.setting.base.poster.landscape') }}</span>
+          <t-popup
+            destroy-on-close
+            attach=".t-form-item__poster"
+            :content="$t('pages.setting.base.poster.popup.landscape')"
+          >
+            <info-circle-icon :style="{ marginBottom: 'var(--td-comp-margin-xs)' }" />
+          </t-popup>
+        </t-space>
+      </t-form-item>
       <t-form-item :label="$t('pages.live.title')" name="live">
         <t-space direction="vertical">
           <t-space align="center">
@@ -369,6 +382,7 @@ watch(
     debug: formData.value.debug,
     bossKey: formData.value.bossKey,
     zoom: formData.value.zoom,
+    posterLandscape: formData.value.posterLandscape,
   }),
   (newVal, oldVal) => {
     const patch = pickBy(
@@ -433,7 +447,8 @@ const getSetting = async () => {
     const resp = await fetchSettingList();
 
     if (isObject(resp) && !isObjectEmpty(resp)) {
-      formData.value = resp as ISetting;
+      // merge defaults so newly added keys fall back to their initial value
+      formData.value = { ...tblSetting, ...(resp as ISetting) };
     }
   } catch (error) {
     console.error(`Failed to get setting conf:`, error);

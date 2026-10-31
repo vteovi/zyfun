@@ -50,6 +50,13 @@ export default {
       },
       filter: '過濾',
     },
+    poster: {
+      title: '海報',
+      landscape: '橫版海報',
+      popup: {
+        landscape: '影視卡片按橫版(16:10)比例展示海報, 關閉則使用豎版比例',
+      },
+    },
     live: {
       ipMark: '網絡標識',
       delay: '延遲',

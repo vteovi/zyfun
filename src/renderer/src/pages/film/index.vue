@@ -100,19 +100,19 @@
             <t-col
               v-for="item in filmList"
               :key="item.vod_id"
-              :md="3"
-              :xl="2"
-              :xxl="1"
+              :md="isLandscape ? 4 : 3"
+              :xl="isLandscape ? 3 : 2"
+              :xxl="isLandscape ? 2 : 1"
               class="card"
               @click="playEvent(item)"
             >
-              <div class="card-main">
+              <div class="card-main" :class="{ 'is-landscape': isLandscape }">
                 <div v-if="item.vod_remarks" class="card-tag card-tag-mask">
                   <span class="card-tag-text txthide txthide1">{{ item.vod_remarks }}</span>
                 </div>
                 <t-image
                   class="card-main-item"
-                  :src="item.vod_pic"
+                  :src="cacheImageUrl(item.vod_pic)"
                   :lazy="true"
                   fit="cover"
                   shape="round"
@@ -222,15 +222,19 @@ import TitleMenu from '@/components/title-menu/index.vue';
 import { emitterChannel, emitterSource } from '@/config/emitterChannel';
 import { attachContent } from '@/config/global';
 import { t } from '@/locales';
-import { usePlayerStore } from '@/store';
+import { usePlayerStore, useSettingStore } from '@/store';
 import emitter from '@/utils/emitter';
+import { cacheImageUrl } from '@/utils/image';
 
 import DialogDetailView from './components/DialogDetail.vue';
 
 const REC_CLASS_TAG = '__rec__';
 
 const storePlayer = usePlayerStore();
+const storeSetting = useSettingStore();
 const signalCancelers = new Map<string, AbortController>();
+
+const isLandscape = computed(() => storeSetting.posterLandscape);
 
 const renderDefaultLazy = () => <LazyBg class="render-icon" />;
 
@@ -1116,6 +1120,10 @@ const handleFolderBreadcrumbClick = (item: { label: ICmsInfo['vod_name']; value:
             padding-top: 128%;
             background-color: var(--td-bg-color-component);
             transition: all 0.25s ease-in-out;
+
+            &.is-landscape {
+              padding-top: 62%;
+            }
 
             .card-tag {
               position: absolute;
