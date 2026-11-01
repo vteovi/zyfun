@@ -100,9 +100,7 @@
             <t-col
               v-for="item in filmList"
               :key="item.vod_id"
-              :md="isLandscape ? 4 : 3"
-              :xl="isLandscape ? 3 : 2"
-              :xxl="isLandscape ? 2 : 1"
+              v-bind="cardColSpan"
               class="card"
               @click="playEvent(item)"
             >
@@ -174,6 +172,7 @@ import 'v3-infinite-loading/lib/style.css';
 import type { ICmsActionSpecialIdType } from '@shared/config/cmsAction';
 import { CMS_ACTION_SPECIAL_ID_TYPE, CMS_ACTION_SPECIAL_ID_TYPES } from '@shared/config/cmsAction';
 import { IPC_CHANNEL } from '@shared/config/ipcChannel';
+import type { IPosterSize } from '@shared/config/setting';
 import { toString } from '@shared/modules/toString';
 import {
   isArray,
@@ -235,6 +234,24 @@ const storeSetting = useSettingStore();
 const signalCancelers = new Map<string, AbortController>();
 
 const isLandscape = computed(() => storeSetting.posterLandscape);
+
+type IPosterSpan = [number, number, number];
+
+// TDesign grid has 12 columns, so a card spanning fewer columns renders bigger.
+// `small` keeps the original layout, the other two step the card size up.
+// [md, xl, xxl]
+const POSTER_COL_SPAN: Record<IPosterSize, { portrait: IPosterSpan; landscape: IPosterSpan }> = {
+  small: { portrait: [3, 2, 1], landscape: [4, 3, 2] },
+  medium: { portrait: [4, 3, 2], landscape: [6, 4, 3] },
+  large: { portrait: [6, 4, 3], landscape: [6, 6, 4] },
+};
+
+const cardColSpan = computed(() => {
+  const span = POSTER_COL_SPAN[storeSetting.posterSize] ?? POSTER_COL_SPAN.small;
+  const [md, xl, xxl] = isLandscape.value ? span.landscape : span.portrait;
+
+  return { md, xl, xxl };
+});
 
 const renderDefaultLazy = () => <LazyBg class="render-icon" />;
 

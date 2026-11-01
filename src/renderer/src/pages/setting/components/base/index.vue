@@ -90,16 +90,29 @@
         </t-space>
       </t-form-item>
       <t-form-item :label="$t('pages.setting.base.poster.title')" name="poster">
-        <t-space align="center">
-          <t-switch v-model="formData.posterLandscape" />
-          <span>{{ $t('pages.setting.base.poster.landscape') }}</span>
-          <t-popup
-            destroy-on-close
-            attach=".t-form-item__poster"
-            :content="$t('pages.setting.base.poster.popup.landscape')"
-          >
-            <info-circle-icon :style="{ marginBottom: 'var(--td-comp-margin-xs)' }" />
-          </t-popup>
+        <t-space align="center" :size="24">
+          <t-space align="center">
+            <t-switch v-model="formData.posterLandscape" />
+            <span>{{ $t('pages.setting.base.poster.landscape') }}</span>
+            <t-popup
+              destroy-on-close
+              attach=".t-form-item__poster"
+              :content="$t('pages.setting.base.poster.popup.landscape')"
+            >
+              <info-circle-icon :style="{ marginBottom: 'var(--td-comp-margin-xs)' }" />
+            </t-popup>
+          </t-space>
+          <t-space align="center">
+            <span>{{ $t('pages.setting.base.poster.size.title') }}</span>
+            <t-radio-group v-model="formData.posterSize" variant="default-filled">
+              <t-radio-button
+                v-for="item in POSTER_SIZE_OPTIONS"
+                :key="item.value"
+                :value="item.value"
+                :label="item.label"
+              />
+            </t-radio-group>
+          </t-space>
         </t-space>
       </t-form-item>
       <t-form-item :label="$t('pages.live.title')" name="live">
@@ -250,7 +263,13 @@
 </template>
 <script setup lang="ts">
 import { IPC_CHANNEL } from '@shared/config/ipcChannel';
-import { AIGC_PROVIDER_TYPE, PLAYER_TYPE, REC_ASSOCIATION_TYPE, REC_HOT_TYPE } from '@shared/config/setting';
+import {
+  AIGC_PROVIDER_TYPE,
+  PLAYER_TYPE,
+  POSTER_SIZE,
+  REC_ASSOCIATION_TYPE,
+  REC_HOT_TYPE,
+} from '@shared/config/setting';
 import type { ISetting } from '@shared/config/tblSetting';
 import { settingObj as tblSetting } from '@shared/config/tblSetting';
 import { THEME } from '@shared/config/theme';
@@ -318,6 +337,12 @@ const LANG_OPTIONS = computed(() => [
   ...langList.value.map((lang) => ({ value: lang.value, label: lang.label })),
 ]);
 
+const POSTER_SIZE_OPTIONS = computed(() => [
+  { value: POSTER_SIZE.SMALL, label: t('pages.setting.base.poster.size.small') },
+  { value: POSTER_SIZE.MEDIUM, label: t('pages.setting.base.poster.size.medium') },
+  { value: POSTER_SIZE.LARGE, label: t('pages.setting.base.poster.size.large') },
+]);
+
 const HOT_OPTIONS = computed(() => [
   // { value: REC_HOT_TYPE.BAIDU, label: t('pages.setting.base.hot.map.baidu') },
   { value: REC_HOT_TYPE.DOUBAN, label: t('pages.setting.base.hot.map.douban') },
@@ -383,6 +408,7 @@ watch(
     bossKey: formData.value.bossKey,
     zoom: formData.value.zoom,
     posterLandscape: formData.value.posterLandscape,
+    posterSize: formData.value.posterSize,
   }),
   (newVal, oldVal) => {
     const patch = pickBy(
@@ -449,6 +475,9 @@ const getSetting = async () => {
     if (isObject(resp) && !isObjectEmpty(resp)) {
       // merge defaults so newly added keys fall back to their initial value
       formData.value = { ...tblSetting, ...(resp as ISetting) };
+
+      // a key added in a newer build is stored as '' until it gets written once
+      if (!formData.value.posterSize) formData.value.posterSize = POSTER_SIZE.SMALL;
     }
   } catch (error) {
     console.error(`Failed to get setting conf:`, error);

@@ -64,13 +64,21 @@ const syncStore = async () => {
   const resp = await fetchSetup();
   setupConf.value = resp;
 
-  const { barrage, bossKey, debug, disclaimer, lang, player, theme, timeout, posterLandscape } = resp;
+  const { barrage, bossKey, debug, disclaimer, lang, player, theme, timeout, posterLandscape, posterSize } = resp;
 
   // privacy policy
   active.value.disclaimer = !disclaimer;
 
   // setting store sync config
-  storeSetting.updateConfig({ bossKey, debug, lang, theme, timeout: timeout || 5000, posterLandscape });
+  storeSetting.updateConfig({
+    bossKey,
+    debug,
+    lang,
+    theme,
+    timeout: timeout || 5000,
+    posterLandscape,
+    posterSize: posterSize || 'small',
+  });
   // play store sync config
   storePlayer.updateConfig({ barrage, player });
 

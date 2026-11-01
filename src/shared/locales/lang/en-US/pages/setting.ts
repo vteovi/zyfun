@@ -57,6 +57,12 @@ export default {
       popup: {
         landscape: 'Show film posters in landscape (16:10) ratio, disable to use portrait ratio',
       },
+      size: {
+        title: 'Poster Size',
+        small: 'Small',
+        medium: 'Medium',
+        large: 'Large',
+      },
     },
     live: {
       ipMark: 'IP Mark',

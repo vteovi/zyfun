@@ -4,6 +4,13 @@ export enum SNIFFER_TYPE {
 }
 export type ISnifferType = `${SNIFFER_TYPE}`;
 
+export enum POSTER_SIZE {
+  SMALL = 'small',
+  MEDIUM = 'medium',
+  LARGE = 'large',
+}
+export type IPosterSize = `${POSTER_SIZE}`;
+
 export enum REC_HOT_TYPE {
   BAIDU = 'baidu',
   DOUBAN = 'douban',

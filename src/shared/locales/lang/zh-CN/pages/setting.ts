@@ -56,6 +56,12 @@ export default {
       popup: {
         landscape: '影视卡片按横版(16:10)比例展示海报, 关闭则使用竖版比例',
       },
+      size: {
+        title: '海报大小',
+        small: '小',
+        medium: '中',
+        large: '大',
+      },
     },
     live: {
       ipMark: '网络标识',

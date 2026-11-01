@@ -1,4 +1,11 @@
-import type { IAigcProviderType, IPlayerType, IRecAssociationType, IRecHotType, ISnifferType } from '../config/setting';
+import type {
+  IAigcProviderType,
+  IPlayerType,
+  IPosterSize,
+  IRecAssociationType,
+  IRecHotType,
+  ISnifferType,
+} from '../config/setting';
 import type { ITheme } from '../config/theme';
 import { USER_AGENT } from '../config/userAgent';
 import type { ILang } from '../locales';
@@ -22,6 +29,7 @@ export const settingList = [
     },
   },
   { key: 'posterLandscape', value: false },
+  { key: 'posterSize', value: 'small' },
   {
     key: 'live',
     value: {
@@ -96,6 +104,7 @@ export interface ISetting {
     filterMode: boolean;
   };
   posterLandscape: boolean;
+  posterSize: IPosterSize;
   live: {
     ipMark: boolean;
     thumbnail: boolean;
@@ -157,7 +166,8 @@ export type ISetupKey =
   | 'barrage'
   | 'timeout'
   | 'debug'
-  | 'posterLandscape';
+  | 'posterLandscape'
+  | 'posterSize';
 
 export const setupKeys: ISetupKey[] = [
   'disclaimer',
@@ -169,6 +179,7 @@ export const setupKeys: ISetupKey[] = [
   'timeout',
   'debug',
   'posterLandscape',
+  'posterSize',
 ];
 
 export type ISetup = Pick<ISetting, ISetupKey>;
