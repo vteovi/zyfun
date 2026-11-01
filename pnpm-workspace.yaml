@@ -35,7 +35,9 @@ allowBuilds:
   es5-ext: true
   esbuild: true
   msw: true
-  phantomjs-prebuilt: true
+  # only used by icon-gen to render svg -> png, which the build never calls.
+  # phantomjs has no linux/arm64 binary, its install script fails the whole install there.
+  phantomjs-prebuilt: false
   protobufjs: true
   registry-js: true
   xterm-addon-search-bar@https://codeload.github.com/Hiram-Wong/xterm-addon-search-bar/tar.gz/1e7ac43d4fe6bab48abacb38685d66357bc6c6dd: true
