@@ -224,7 +224,7 @@ import { attachContent } from '@/config/global';
 import { t } from '@/locales';
 import { usePlayerStore, useSettingStore } from '@/store';
 import emitter from '@/utils/emitter';
-import { cacheImageUrl } from '@/utils/image';
+import { cacheImageUrl, prefetchPosters } from '@/utils/image';
 
 import DialogDetailView from './components/DialogDetail.vue';
 
@@ -443,6 +443,9 @@ const getCmsCategory = async (source: IModels['site']): Promise<number> => {
   if (isArray(resp.list) && !isArrayEmpty(resp.list)) {
     resp.list = differenceBy(resp.list, filmList.value, (item: ICmsInfo) => item.vod_id);
     filmList.value.push(...resp.list);
+
+    // warm the next screen of posters while the first one is still loading
+    prefetchPosters(filmList.value.slice(8, 24).map((item) => item.vod_pic));
   }
   if (resp.total) pagination.value.total = resp.total;
 
@@ -477,6 +480,8 @@ const getCmsSearch = async (source: IModels['site']): Promise<number> => {
       (item: ICmsInfo & { relateSite: IModels['site'] }) => `${item.relateSite?.id ?? '0'}-${item.vod_id}`,
     );
     filmList.value.push(...resp.list);
+
+    prefetchPosters(filmList.value.slice(8, 24).map((item) => item.vod_pic));
   }
   if (resp.total) pagination.value.total = resp.total;
 

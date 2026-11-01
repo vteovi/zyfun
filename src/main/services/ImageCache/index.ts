@@ -9,7 +9,7 @@ import { APP_CACHE_PATH } from '@main/utils/path';
 import { IMAGE_CACHE_SCHEME } from '@shared/config/image';
 import { LOG_MODULE } from '@shared/config/logger';
 import { isHttp } from '@shared/modules/validate';
-import { net, protocol } from 'electron';
+import { nativeImage, net, protocol } from 'electron';
 import fs from 'fs-extra';
 
 const logger = loggerService.withContext(LOG_MODULE.IMAGE_CACHE);
@@ -21,9 +21,23 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 /** Keep the cache bounded: max entries and max age */
 const MAX_FILES = 2000;
 const MAX_AGE = 60 * 24 * 60 * 60 * 1000;
-const FETCH_TIMEOUT = 15 * 1000;
+const FETCH_TIMEOUT = 20 * 1000;
 /** Prune the cache every N writes */
 const PRUNE_INTERVAL = 200;
+/** How many images may be downloaded at the same time */
+const MAX_CONCURRENCY = 6;
+/** Retry a failed download once, the poster CDNs drop connections a lot */
+const MAX_ATTEMPTS = 2;
+/** Posters are never rendered wider than this, so shrink them before caching */
+const STORE_WIDTH = 640;
+const STORE_QUALITY = 80;
+/** Types that must be stored untouched, resizing would break them */
+const RAW_TYPES = new Set(['image/gif', 'image/svg+xml']);
+/** Entries above this size were stored by an older version and get re-encoded on read */
+const LEGACY_SHRINK_THRESHOLD = 150 * 1024;
+/** Hot images kept in memory so repeat visits do not touch the disk at all */
+const MAX_MEMORY_ENTRIES = 120;
+const MAX_MEMORY_BYTES = 48 * 1024 * 1024;
 
 interface ICachedImage {
   body: Buffer;
@@ -33,6 +47,10 @@ interface ICachedImage {
 class ImageCache {
   private static instance: ImageCache;
   private pending = new Map<string, Promise<ICachedImage | null>>();
+  private memory = new Map<string, ICachedImage>();
+  private memoryBytes = 0;
+  private active = 0;
+  private waiting: Array<() => void> = [];
   private writeCount = 0;
 
   constructor() {}
@@ -76,6 +94,8 @@ class ImageCache {
 
   public clear = async (): Promise<void> => {
     this.pending.clear();
+    this.memory.clear();
+    this.memoryBytes = 0;
     await clearDir(CACHE_DIR);
   };
 
@@ -83,16 +103,9 @@ class ImageCache {
     const target = this.parseTarget(requestUrl);
     if (!target) return new Response(null, { status: 400 });
 
-    const cached = (await this.readCache(target)) ?? (await this.download(target));
+    const cached = (await this.readMemory(target)) ?? (await this.readCache(target)) ?? (await this.download(target));
     if (cached) {
-      return new Response(new Uint8Array(cached.body), {
-        status: 200,
-        headers: {
-          'Content-Type': cached.type,
-          'Content-Length': String(cached.body.length),
-          'Cache-Control': 'public, max-age=31536000, immutable',
-        },
-      });
+      return this.buildResponse(cached);
     }
 
     // cache missed and download failed, fall back to the origin so the image is
@@ -102,6 +115,17 @@ class ImageCache {
     } catch {
       return new Response(null, { status: 404 });
     }
+  };
+
+  private buildResponse = (cached: ICachedImage): Response => {
+    return new Response(new Uint8Array(cached.body), {
+      status: 200,
+      headers: {
+        'Content-Type': cached.type,
+        'Content-Length': String(cached.body.length),
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    });
   };
 
   private parseTarget = (requestUrl: string): string => {
@@ -115,6 +139,39 @@ class ImageCache {
   };
 
   private hashOf = (target: string): string => createHash('sha256').update(target).digest('hex');
+
+  private readMemory = (target: string): ICachedImage | null => {
+    const hit = this.memory.get(target);
+    if (!hit) return null;
+
+    // refresh recency
+    this.memory.delete(target);
+    this.memory.set(target, hit);
+
+    return hit;
+  };
+
+  private writeMemory = (target: string, entry: ICachedImage): void => {
+    if (entry.body.length > MAX_MEMORY_BYTES) return;
+
+    const previous = this.memory.get(target);
+    if (previous) {
+      this.memoryBytes -= previous.body.length;
+      this.memory.delete(target);
+    }
+
+    this.memory.set(target, entry);
+    this.memoryBytes += entry.body.length;
+
+    while (this.memory.size > MAX_MEMORY_ENTRIES || this.memoryBytes > MAX_MEMORY_BYTES) {
+      const oldest = this.memory.keys().next();
+      if (oldest.done) break;
+
+      const dropped = this.memory.get(oldest.value);
+      if (dropped) this.memoryBytes -= dropped.body.length;
+      this.memory.delete(oldest.value);
+    }
+  };
 
   private readCache = async (target: string): Promise<ICachedImage | null> => {
     const hash = this.hashOf(target);
@@ -131,14 +188,30 @@ class ImageCache {
       }
     }
 
-    return { body, type };
+    const entry: ICachedImage = { body, type };
+    this.writeMemory(target, entry);
+
+    // entries written by older versions are full size, shrink them lazily so the
+    // user does not pay for a full re-download just to get smaller posters
+    if (body.length > LEGACY_SHRINK_THRESHOLD) {
+      setTimeout(() => {
+        const smaller = this.shrink(body, type);
+        if (smaller.body.length < body.length) void this.writeCache(target, smaller);
+      }, 0);
+    }
+
+    return entry;
   };
 
-  private writeCache = async (target: string, body: Buffer, type: string): Promise<void> => {
+  private writeCache = async (target: string, entry: ICachedImage): Promise<void> => {
+    this.writeMemory(target, entry);
+
+    if (entry.body.length > MAX_FILE_SIZE) return;
+
     try {
       const hash = this.hashOf(target);
-      await saveFile(join(CACHE_DIR, `${hash}.bin`), body);
-      await saveFile(join(CACHE_DIR, `${hash}.json`), JSON.stringify({ type, size: body.length }));
+      await saveFile(join(CACHE_DIR, `${hash}.bin`), entry.body);
+      await saveFile(join(CACHE_DIR, `${hash}.json`), JSON.stringify({ type: entry.type, size: entry.body.length }));
 
       this.writeCount += 1;
       if (this.writeCount % PRUNE_INTERVAL === 0) void this.prune();
@@ -151,10 +224,81 @@ class ImageCache {
     const pending = this.pending.get(target);
     if (pending) return pending;
 
-    const job = this.request(target).finally(() => this.pending.delete(target));
+    const job = this.enqueue(target)
+      .then(async (entry) => {
+        if (!entry) return null;
+
+        // re-encode outside the download slot, it is pure cpu work
+        const shrunk = this.shrink(entry.body, entry.type);
+        await this.writeCache(target, shrunk);
+
+        return shrunk;
+      })
+      .finally(() => this.pending.delete(target));
+
     this.pending.set(target, job);
 
     return job;
+  };
+
+  private enqueue = async (target: string): Promise<ICachedImage | null> => {
+    await this.acquire();
+    try {
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const entry = await this.request(target);
+        if (entry) return entry;
+
+        if (attempt < MAX_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+      }
+      return null;
+    } finally {
+      this.release();
+    }
+  };
+
+  private acquire = (): Promise<void> => {
+    if (this.active < MAX_CONCURRENCY) {
+      this.active += 1;
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      this.waiting.push(() => {
+        this.active += 1;
+        resolve();
+      });
+    });
+  };
+
+  private release = (): void => {
+    this.active = Math.max(0, this.active - 1);
+    this.waiting.shift()?.();
+  };
+
+  /**
+   * Shrink the poster before it is cached: the list renders it a few hundred
+   * pixels wide, storing the untouched 1MB original only costs disk io and
+   * decode time on every later view.
+   */
+  private shrink = (body: Buffer, type: string): ICachedImage => {
+    if (RAW_TYPES.has(type)) return { body, type };
+
+    try {
+      const image = nativeImage.createFromBuffer(body);
+      if (image.isEmpty()) return { body, type };
+
+      const { width } = image.getSize();
+      const resized = width > STORE_WIDTH ? image.resize({ width: STORE_WIDTH, quality: 'good' }) : image;
+      const jpeg = resized.toJPEG(STORE_QUALITY);
+
+      // keep the original whenever the re-encode does not actually help
+      if (jpeg.length === 0 || jpeg.length >= body.length) return { body, type };
+
+      return { body: jpeg, type: 'image/jpeg' };
+    } catch (error) {
+      logger.warn(`Failed to shrink image: ${(error as Error).message}`);
+      return { body, type };
+    }
   };
 
   private request = async (target: string): Promise<ICachedImage | null> => {
@@ -172,13 +316,10 @@ class ImageCache {
       const type = resp.headers.get('content-type')?.split(';')[0].trim() || 'image/jpeg';
       if (!type.startsWith('image/')) throw new Error(`Unexpected content type: ${type}`);
 
-      const body = Buffer.from(await resp.arrayBuffer());
-      if (body.length === 0) throw new Error('Empty image body');
+      const raw = Buffer.from(await resp.arrayBuffer());
+      if (raw.length === 0) throw new Error('Empty image body');
 
-      // write in background so the response is not blocked by disk io
-      if (body.length <= MAX_FILE_SIZE) void this.writeCache(target, body, type);
-
-      return { body, type };
+      return { body: raw, type };
     } catch (error) {
       logger.warn(`Failed to fetch image: ${target}`, error as Error);
       return null;
